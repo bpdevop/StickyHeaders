@@ -2,27 +2,22 @@ package com.bpdevop.stickyheader
 
 import android.os.Handler
 import android.os.Looper
-import android.util.SparseBooleanArray
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.bpdevop.stickyheader.Contants.NO_POSITION
-import com.bpdevop.stickyheader.Contants.TYPE_FOOTER
-import com.bpdevop.stickyheader.Contants.TYPE_GHOST_HEADER
-import com.bpdevop.stickyheader.Contants.TYPE_HEADER
-import com.bpdevop.stickyheader.Contants.TYPE_ITEM
-import com.bpdevop.stickyheader.Contants.unmaskBaseViewType
-import com.bpdevop.stickyheader.Contants.unmaskUserViewType
+import com.bpdevop.stickyheader.core.Constants.NO_POSITION
+import com.bpdevop.stickyheader.core.Constants.TYPE_FOOTER
+import com.bpdevop.stickyheader.core.Constants.TYPE_GHOST_HEADER
+import com.bpdevop.stickyheader.core.Constants.TYPE_HEADER
+import com.bpdevop.stickyheader.core.Constants.TYPE_ITEM
+import com.bpdevop.stickyheader.core.Constants.unmaskBaseViewType
+import com.bpdevop.stickyheader.core.Constants.unmaskUserViewType
+import com.bpdevop.stickyheader.data.Section
+import com.bpdevop.stickyheader.data.SectionSelectionState
+import com.bpdevop.stickyheader.data.SelectionVisitor
 import java.util.*
 
-
 open class StickyAdapter : RecyclerView.Adapter<StickyAdapter.ViewHolder>() {
-
-    private class SectionSelectionState {
-        var section = false
-        var items = SparseBooleanArray()
-        var footer = false
-    }
 
     private var sections: ArrayList<Section>? = null
     private val collapsedSections = HashMap<Int, Boolean>()
@@ -272,7 +267,8 @@ open class StickyAdapter : RecyclerView.Adapter<StickyAdapter.ViewHolder>() {
      * @param sectionIndex the index of the section
      * @return adapter position of that section's header, or NO_POSITION if section has no header
      */
-    open fun getAdapterPositionForSectionHeader(sectionIndex: Int): Int = if (doesSectionHaveHeader(sectionIndex)) getAdapterPosition(sectionIndex, 0) else NO_POSITION
+    open fun getAdapterPositionForSectionHeader(sectionIndex: Int): Int =
+        if (doesSectionHaveHeader(sectionIndex)) getAdapterPosition(sectionIndex, 0) else NO_POSITION
 
     /**
      * Return the adapter position corresponding to the ghost header of the provided section
@@ -280,8 +276,9 @@ open class StickyAdapter : RecyclerView.Adapter<StickyAdapter.ViewHolder>() {
      * @param sectionIndex the index of the section
      * @return adapter position of that section's ghost header, or NO_POSITION if section has no ghost header
      */
-    open fun getAdapterPositionForSectionGhostHeader(sectionIndex: Int): Int = if (doesSectionHaveHeader(sectionIndex)) getAdapterPosition(sectionIndex, 1) // ghost header follows the header
-    else NO_POSITION
+    open fun getAdapterPositionForSectionGhostHeader(sectionIndex: Int): Int =
+        if (doesSectionHaveHeader(sectionIndex)) getAdapterPosition(sectionIndex, 1) // ghost header follows the header
+        else NO_POSITION
 
     /**
      * Return the adapter position corresponding to a specific item in the section
@@ -421,15 +418,6 @@ open class StickyAdapter : RecyclerView.Adapter<StickyAdapter.ViewHolder>() {
             }
         }
         return count
-    }
-
-    /**
-     * Visitor interface for walking adapter selection state.
-     */
-    interface SelectionVisitor {
-        fun onVisitSelectedSection(sectionIndex: Int)
-        fun onVisitSelectedSectionItem(sectionIndex: Int, itemIndex: Int)
-        fun onVisitSelectedFooter(sectionIndex: Int)
     }
 
     /**
@@ -662,10 +650,8 @@ open class StickyAdapter : RecyclerView.Adapter<StickyAdapter.ViewHolder>() {
             notifyItemRangeRemoved(section.adapterPosition + offset, number)
             buildSectionIndex()
         }
-        if (updateSelectionState) {
-            // update selection state by removing specified items
-            updateSectionItemRangeSelectionState(sectionIndex, fromPosition, -number)
-        }
+        // update selection state by removing specified items
+        if (updateSelectionState) updateSectionItemRangeSelectionState(sectionIndex, fromPosition, -number)
     }
 
     /**
@@ -676,18 +662,18 @@ open class StickyAdapter : RecyclerView.Adapter<StickyAdapter.ViewHolder>() {
      * @param itemIndex    the index of the item relative to the section (where 0 is the first item in the section)
      */
     open fun notifySectionItemChanged(sectionIndex: Int, itemIndex: Int) {
-        var itemIndex = itemIndex
+        var item = itemIndex
         if (sections == null) {
             buildSectionIndex()
             notifyAllSectionsDataSetChanged()
         } else {
             buildSectionIndex()
             val section: Section = sections!![sectionIndex]
-            if (itemIndex >= section.numberOfItems) throw IndexOutOfBoundsException("itemIndex adapterPosition: $itemIndex exceeds sectionIndex numberOfItems: ${section.numberOfItems}")
+            if (item >= section.numberOfItems) throw IndexOutOfBoundsException("itemIndex adapterPosition: $item exceeds sectionIndex numberOfItems: ${section.numberOfItems}")
 
-            if (section.hasHeader) itemIndex += 2
+            if (section.hasHeader) item += 2
 
-            notifyItemChanged(section.adapterPosition + itemIndex)
+            notifyItemChanged(section.adapterPosition + item)
         }
     }
 
@@ -840,7 +826,7 @@ open class StickyAdapter : RecyclerView.Adapter<StickyAdapter.ViewHolder>() {
             var s = 0
             val ns = getNumberOfSections()
             while (s < ns) {
-                val section: Section = Section()
+                val section = Section()
                 section.adapterPosition = i
                 section.hasHeader = doesSectionHaveHeader(s)
                 section.hasFooter = doesSectionHaveFooter(s)
@@ -896,7 +882,6 @@ open class StickyAdapter : RecyclerView.Adapter<StickyAdapter.ViewHolder>() {
     }
 
     private fun updateCollapseAndSelectionStateForSectionChange(sectionIndex: Int, delta: Int) {
-
         // update section collapse state
         val collapseState = HashMap(collapsedSections)
         collapsedSections.clear()
@@ -932,11 +917,10 @@ open class StickyAdapter : RecyclerView.Adapter<StickyAdapter.ViewHolder>() {
             buildSectionIndex()
         }
 
-        if (adapterPosition < 0) {
+        if (adapterPosition < 0)
             throw IndexOutOfBoundsException("adapterPosition ($adapterPosition) cannot be < 0")
-        } else if (adapterPosition >= itemCount) {
+        else if (adapterPosition >= itemCount)
             throw IndexOutOfBoundsException("adapterPosition ($adapterPosition)  cannot be > getItemCount() ($itemCount)")
-        }
 
         val sectionIndex = getSectionForAdapterPosition(adapterPosition)
         val section: Section = sections!![sectionIndex]
@@ -953,9 +937,7 @@ open class StickyAdapter : RecyclerView.Adapter<StickyAdapter.ViewHolder>() {
             }
             TYPE_ITEM -> {
                 // adjust local position to accommodate header & ghost header
-                if (section.hasHeader) {
-                    localPosition -= 2
-                }
+                if (section.hasHeader) localPosition -= 2
                 userType = getSectionItemUserType(sectionIndex, localPosition)
                 require(!(userType < 0 || userType > 0xFF)) { "Custom item view type ($userType) must be in range [0,255]" }
             }
@@ -973,17 +955,13 @@ open class StickyAdapter : RecyclerView.Adapter<StickyAdapter.ViewHolder>() {
      * @param adapterPosition the adapterPosition of the item in question
      * @return the base type (TYPE_HEADER, TYPE_GHOST_HEADER, TYPE_ITEM, TYPE_FOOTER) of the item at a given adapter position
      */
-    open fun getItemViewBaseType(adapterPosition: Int): Int {
-        return unmaskBaseViewType(getItemViewType(adapterPosition))
-    }
+    open fun getItemViewBaseType(adapterPosition: Int): Int = unmaskBaseViewType(getItemViewType(adapterPosition))
 
     /**
      * @param adapterPosition the adapterPosition of the item in question
      * @return the custom user type of the item at the adapterPosition
      */
-    open fun getItemViewUserType(adapterPosition: Int): Int {
-        return unmaskUserViewType(getItemViewType(adapterPosition))
-    }
+    open fun getItemViewUserType(adapterPosition: Int): Int = unmaskUserViewType(getItemViewType(adapterPosition))
 
 
     open fun getItemViewBaseType(section: Section, localPosition: Int): Int = if (section.hasHeader && section.hasFooter) {
@@ -1023,8 +1001,6 @@ open class StickyAdapter : RecyclerView.Adapter<StickyAdapter.ViewHolder>() {
         // bind the sections to this view holder
         holder.setSection(section)
         holder.setNumberOfItemsInSection(getNumberOfItemsInSection(section))
-
-        // tag the viewHolder's item so as to make it possible to track in layout manager
 
         // tag the viewHolder's item so as to make it possible to track in layout manager
         tagViewHolderItemView(holder, section, adapterPosition)

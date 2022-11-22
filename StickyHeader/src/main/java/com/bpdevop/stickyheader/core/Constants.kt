@@ -1,6 +1,6 @@
-package com.bpdevop.stickyheader
+package com.bpdevop.stickyheader.core
 
-object Contants {
+object Constants {
     const val NO_POSITION = -1
     const val TYPE_HEADER = 0
     const val TYPE_GHOST_HEADER = 1
