@@ -1,5 +1,6 @@
 package com.bpdevop.stickyheader
 
+import android.annotation.SuppressLint
 import android.os.Handler
 import android.os.Looper
 import android.view.View
@@ -561,6 +562,7 @@ open class StickyAdapter : RecyclerView.Adapter<StickyAdapter.ViewHolder>() {
      * Equivalent to RecyclerView.Adapter.notifyDataSetChanged.
      * Never directly call notifyDataSetChanged.
      */
+    @SuppressLint("NotifyDataSetChanged")
     open fun notifyAllSectionsDataSetChanged() {
         buildSectionIndex()
         notifyDataSetChanged()
